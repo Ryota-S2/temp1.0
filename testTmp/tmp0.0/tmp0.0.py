@@ -1,6 +1,5 @@
 import json
 from json import loads
-import re
 import random
 import os
 from dotenv import load_dotenv
@@ -8,20 +7,20 @@ import streamlit as st
 from openai import OpenAI
 import pandas as pd
 
-# ===== CSV パス =====
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CSV_PATH = os.path.join(BASE_DIR, "Book1.csv")
 
-# ===== UTF-8 で読み込む =====
+
 def load_csv(path):
     return pd.read_csv(path, encoding="utf-8", header=None)
 
-# ===== OpenAI API =====
+
 load_dotenv()
 api_key = os.getenv("OPENAI_API_KEY")
 client = OpenAI(api_key=api_key)
 
-st.title("📘 CSV教材 → 四択問題生成アプリ（Temperature=0.0）")
+st.title("📘 CSV教材 → 四択問題生成アプリ（Structured Outputs / Temperature=0.0）")
 
 # ===== Book1.csv を読み込む =====
 if not os.path.exists(CSV_PATH):
@@ -31,29 +30,33 @@ if not os.path.exists(CSV_PATH):
 try:
     df = load_csv(CSV_PATH)
 except UnicodeDecodeError:
-    st.error("Book1.csv が UTF-8 で保存されていません。UTF-8 で保存し直してください。")
+    st.error("Book1.csv を UTF-8 に変換して保存し直してください。")
     st.stop()
 
-# ===== 1列目のみ使用 =====
+# ===== 1列目を教材文章として使用 =====
 explanations_list = df[0].dropna().astype(str).tolist()
 
-# =====問題生成準備=====
+# ===== 初期化 =====
 if "question_data" not in st.session_state:
     st.session_state.next_question = True
 
-# =====問題生成=====
+
 if st.session_state.next_question:
 
-    SelectedQuestion = random.choice(explanations_list)
+    SelectedText = random.choice(explanations_list)
 
     response = client.chat.completions.create(
-        model="gpt-4.1",
+        model="gpt-4.1",   # ← 安定性重視
         messages=[
             {
                 "role": "system",
-                "content": "あなたはクイズの出題者です。与えられた文章から四択問題をJSON形式で作成してください。"
+                "content": (
+                    "あなたはクイズの出題者です。"
+                    "与えられた文章を読んで、内容に基づく四択問題を作成してください。"
+                    "出力は指定された JSON Schema に厳密に従ってください。"
+                )
             },
-            {"role": "user", "content": SelectedQuestion},
+            {"role": "user", "content": SelectedText},
         ],
         response_format={
             "type": "json_schema",
@@ -69,7 +72,15 @@ if st.session_state.next_question:
                         "Choice4": {"type": "string"},
                         "CorrectAnswer": {"type": "number"},
                     },
-                    "required": ["Question", "Choice1", "Choice2", "Choice3", "Choice4", "CorrectAnswer"],
+                    "required": [
+                        "Question",
+                        "Choice1",
+                        "Choice2",
+                        "Choice3",
+                        "Choice4",
+                        "CorrectAnswer"
+                    ],
+                    "additionalProperties": False,
                 },
                 "strict": True,
             },
@@ -77,14 +88,12 @@ if st.session_state.next_question:
         temperature=0.0
     )
 
-    output_text = response.choices[0].message.content
-    data = loads(output_text)
+    data = json.loads(response.choices[0].message.content)
 
     st.session_state.question_data = data
-    st.session_state.explanation = SelectedQuestion
+    st.session_state.explanation = SelectedText
     st.session_state.next_question = False
 
-# ===== UI =====
 q = st.session_state.question_data
 
 st.subheader("🔍 問題")
@@ -94,7 +103,7 @@ choices = [
     f"1. {q['Choice1']}",
     f"2. {q['Choice2']}",
     f"3. {q['Choice3']}",
-    f"4. {q['Choice4']}"
+    f"4. {q['Choice4']}",
 ]
 
 selected = st.radio("選択肢：", choices)
@@ -102,9 +111,9 @@ selected = st.radio("選択肢：", choices)
 if st.button("解答"):
     selected_index = choices.index(selected) + 1
     if selected_index == q["CorrectAnswer"]:
-        st.success("🎉 正解！")
+        st.success("正解！")
     else:
-        st.error("❌ 不正解")
+        st.error("不正解")
     st.info(f"📘 元の文章：\n{st.session_state.explanation}")
 
 if st.button("次の問題へ"):
