@@ -41,7 +41,7 @@ api_key = os.getenv("OPENAI_API_KEY")
 client = OpenAI(api_key=api_key)
 
 # ===== Streamlit UI =====
-st.title("兵庫学検定試験対策ツール（5問同時出題＋平均コサイン類似度付き）")
+st.title("兵庫学検定試験対策ツール ")
 
 # ファイルアップロード
 uploaded_file = st.file_uploader("クイズに使うPDFファイルを選んでください", type=["pdf"])
