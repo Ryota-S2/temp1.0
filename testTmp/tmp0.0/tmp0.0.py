@@ -83,7 +83,7 @@ if st.session_state.next_question:
                 "strict": True,
             },
         },
-        temperature=0.6
+        temperature=0.0
     )
 
     data = json.loads(response.choices[0].message.content)
@@ -112,7 +112,7 @@ if st.button("解答"):
         st.success("正解！")
     else:
         st.error("不正解")
-    st.info(f"解説\n{st.session_state.explanation}")
+    st.info(f"解説：\n{st.session_state.explanation}")
 
 if st.button("次の問題へ"):
     st.session_state.next_question = True
