@@ -20,7 +20,7 @@ load_dotenv()
 api_key = os.getenv("OPENAI_API_KEY")
 client = OpenAI(api_key=api_key)
 
-st.title("📘 CSV教材 → 四択問題生成アプリ（Structured Outputs / Temperature=0.0）")
+st.title("兵庫学検定試験対策ツール Temperature=0.6）")
 
 # ===== Book1.csv を読み込む =====
 if not os.path.exists(CSV_PATH):
@@ -33,10 +33,8 @@ except UnicodeDecodeError:
     st.error("Book1.csv を UTF-8 に変換して保存し直してください。")
     st.stop()
 
-# ===== 1列目を教材文章として使用 =====
 explanations_list = df[0].dropna().astype(str).tolist()
 
-# ===== 初期化 =====
 if "question_data" not in st.session_state:
     st.session_state.next_question = True
 
@@ -46,7 +44,7 @@ if st.session_state.next_question:
     SelectedText = random.choice(explanations_list)
 
     response = client.chat.completions.create(
-        model="gpt-4.1",   # ← 安定性重視
+        model="gpt-4.1",
         messages=[
             {
                 "role": "system",
@@ -85,7 +83,7 @@ if st.session_state.next_question:
                 "strict": True,
             },
         },
-        temperature=0.0
+        temperature=0.6
     )
 
     data = json.loads(response.choices[0].message.content)
@@ -96,7 +94,7 @@ if st.session_state.next_question:
 
 q = st.session_state.question_data
 
-st.subheader("🔍 問題")
+st.subheader(" 問題")
 st.write(q["Question"])
 
 choices = [
@@ -114,7 +112,7 @@ if st.button("解答"):
         st.success("正解！")
     else:
         st.error("不正解")
-    st.info(f"📘 元の文章：\n{st.session_state.explanation}")
+    st.info(f"解説\n{st.session_state.explanation}")
 
 if st.button("次の問題へ"):
     st.session_state.next_question = True
