@@ -20,7 +20,7 @@ load_dotenv()
 api_key = os.getenv("OPENAI_API_KEY")
 client = OpenAI(api_key=api_key)
 
-st.title("兵庫学検定試験対策ツール Temperature=0.6）")
+st.title("兵庫学検定試験対策ツール Temperature=0.0")
 
 # ===== Book1.csv を読み込む =====
 if not os.path.exists(CSV_PATH):
